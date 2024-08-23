@@ -1,12 +1,10 @@
 # routes.py
 from flask import Flask
-from .Scraping_controller import fetch_product, filter_proxies
+from .Scraping_controller import check_validity
 
 def create_app():
     app = Flask(__name__)
+    app.route('/product/cv', methods=['POST', 'GET'])(check_validity)
 
-    # Define routes and map them to controller functions
-   # app.route('/proxies/filter', methods=['POST' ])(filter_proxies)
-    app.route('/product/details', methods=['POST', 'Get'])(fetch_product)
 
     return app
