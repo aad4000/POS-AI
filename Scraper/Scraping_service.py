@@ -100,27 +100,27 @@ def extract_company_name(netloc):
 def handle_alibaba(response):
         if response:
             soup = BeautifulSoup(response.text, "html.parser")
-            # Extract the title
+            
             title = soup.find("h1", title=True)
             if title:
                 title_text = title.get_text(strip=True)
 
-            # Extract the price
+            
             price_element = soup.find('div', class_='price')
             if price_element:
                 price_text = price_element.get_text(strip=True)
             else:
-                # Fallback: Look for the price in span elements
+                
                 price_spans = soup.find_all('span')
                 for span in price_spans:
                     if "$" in span.text:
                         price_text = span.get_text(strip=True)
                         break
 
-            # Create a dictionary to hold the results
+            
           
 
-            # Return the result as a JSON object
+            
             return  {"price": price_text, "description": title_text}
         else:
             return json.dumps({"error": "No response"})
@@ -130,12 +130,11 @@ def handle_newegg(response):
 
        
 
-        # Find the title
         title = soup.find("h1", class_="product-title")
         if title:
             title_text = title.get_text(strip=True)
 
-        # Find the price
+        
         price_li = soup.find('li', class_='price-current')
         if price_li:
             dollar_part = price_li.find('strong')
@@ -143,12 +142,12 @@ def handle_newegg(response):
 
             if dollar_part and cents_part:
                 price = f"${dollar_part.get_text(strip=True)}{cents_part.get_text(strip=True)}"
-            elif dollar_part:  # Handle cases where cents_part might be missing
+            elif dollar_part: 
                 price = f"${dollar_part.get_text(strip=True)}"
 
         
 
-        # Return the result as a JSON object
+        
         return  {"price": price, "description": title_text}
     else:
             return json.dumps({"error": "No response"})
@@ -158,22 +157,22 @@ def handle_ayoub_computer(response):
     if response:
         soup = BeautifulSoup(response.text, "html.parser")
 
-        # Initialize variables with default values
+        
         
 
-        # Find the title
+       
         title = soup.find("h1", class_="productView-title")
         if title:
             title_text = title.get_text(strip=True)
 
-        # Find the price
+       
         price = soup.find("span", class_="price price--withoutTax price--main")
         if price:
             price_text = price.get_text(strip=True)
         
         
 
-         # Return the result as a JSON object
+          
         return  {"price": price_text, "description": title_text}
     else:
             return json.dumps({"error": "No response"})
@@ -183,13 +182,13 @@ def handle_techzone(response):
     if response:
         soup = BeautifulSoup(response.text, "html.parser")
 
-        # Find the title
+        
         title = soup.find("h1", class_="product_title entry-title wd-entities-title")
         if title:
            title_text= title.get_text(strip=True)
         
 
-        # Find the price
+        
         price=soup.find('p', class_='price').find('span', class_='woocommerce-Price-amount')
         if price:
             price_text=price.get_text(strip=True)
