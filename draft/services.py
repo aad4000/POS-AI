@@ -12,9 +12,6 @@ from selenium.webdriver.chrome.options import Options
 from flask import jsonify
 
 
-def is_ayoubcomputers_url(url):
-    """Check if the URL contains 'https://ayoubcomputers.com/'."""
-    return "https://ayoubcomputers.com/" in url
 
 def make_request(site):
     """Make a GET request to the given URL using a randomly selected proxy from the file."""
