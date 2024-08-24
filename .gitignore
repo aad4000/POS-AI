@@ -7,3 +7,4 @@ proxies.txt
 valid_proxies.txt
 drivers/
 test.py
+__pycache__/
