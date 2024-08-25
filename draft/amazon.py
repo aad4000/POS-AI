@@ -8,17 +8,29 @@ from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
 import requests
 import json
+from botocore.exceptions import ClientError
+
+def get_secret(secret_name):
+    # Initialize a session using Amazon Secrets Manager
+    client = boto3.client('secretsmanager', region_name='us-east-1')
+
+    try:
+        # Retrieve the secret
+        get_secret_value_response = client.get_secret_value(SecretId=secret_name)
+        secret = get_secret_value_response['SecretString']
+        return json.loads(secret)
+    except ClientError as e:
+        raise e
 
 def amazon_captcha_solver(url, max_attempts=5):
     # AWS credentials (For testing purposes only. Avoid hardcoding in production)
-    aws_access_key_id = 'AKIA47CRYVZCSF523ZOG'
-    aws_secret_access_key = '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'
+    secret = get_secret('AcessKey')
 
     # Initialize the Textract client with credentials
     textract_client = boto3.client(
         'textract',
-        aws_access_key_id=aws_access_key_id,
-        aws_secret_access_key=aws_secret_access_key,
+        aws_access_key_id=secret['aws_access_key_id'],
+        aws_secret_access_key=secret['aws_secret_access_key'],
         region_name='us-east-1'
     )
 

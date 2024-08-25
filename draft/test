@@ -1,0 +1,62 @@
+import boto3
+import json
+
+# Define region and model name
+REGION_NAME = "us-east-1"
+MODEL_NAME = "anthropic.claude-3-5-sonnet-20240620-v1:0"
+
+# Function to interact with Claude model via AWS Bedrock
+def generate_prompt(user_price, user_description, scraped_price, scraped_description):
+    """
+    Generate a prompt for the Claude model to compare user-provided data with scraped data.
+    """
+    prompt = f"""
+    Compare the following two sets of data:
+
+    User Provided Data:
+    - Price: {user_price}
+    - Description: "{user_description}"
+
+    Scraped Data:
+    - Price: {scraped_price}
+    - Description: "{scraped_description}"
+
+    Provide:
+    1. A match score between 0 and 100, where 100 means the data is an exact match.
+    2. Whether the data matches or not (Yes/No).
+    3. A detailed analysis of the comparison.
+
+    Format the response in JSON as follows:
+    {{
+        "match_score": int,
+        "is_match": "Yes" or "No",
+        "analysis": "Your detailed analysis here."
+    }}
+    """
+    return prompt.strip()
+def get_completion(prompt):
+    """
+    Send a prompt to the Claude model and retrieve the response.
+    """
+    try:
+        bedrock = boto3.client(service_name="bedrock-runtime", region_name=REGION_NAME)
+        body = json.dumps({
+            "max_tokens": 256,
+            "messages": [{"role": "user", "content": prompt}],
+            "anthropic_version": "bedrock-2023-05-31"
+        })
+
+        response = bedrock.invoke_model(body=body, modelId=MODEL_NAME)
+        response_body = json.loads(response.get("body").read())
+        return response_body.get("content")
+    except Exception as e:
+        print(f"Error communicating with Claude: {e}")
+        raise e
+
+# Test the function with a simple prompt
+def main():
+    prompt=generate_prompt(100, "A beautiful painting", 99, "A beautiful painting")
+    result = get_completion(prompt)
+    print(result) 
+if __name__ == "__main__":
+    main()
