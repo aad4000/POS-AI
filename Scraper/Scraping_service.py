@@ -4,7 +4,7 @@ import json
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse
 import random
-
+import re
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
@@ -71,43 +71,49 @@ REGION_NAME = "us-east-1"
 MODEL_NAME = "anthropic.claude-3-5-sonnet-20240620-v1:0"
 
 # Function to interact with Claude model via AWS Bedrock
-def generate_prompt(user_price, user_description, scraped_price, scraped_description):
+def generate_prompt(user_price, scraped_price, score):
     """
-    Generate a prompt for the Claude model to compare user-provided data with scraped data in XML format.
+    Generate a prompt for the Claude model to compare user-provided price with scraped price,
+    focusing solely on price comparison and providing a brief two-line analysis.
     """
     prompt = f"""
     <prompt>
-        <task>Compare the following two sets of data:</task>
+        <task>Price Comparison</task>
+
+        <examples>
+            <example>
+                <userProvidedPrice>100.00</userProvidedPrice>
+                <scrapedPrice>100.00</scrapedPrice>
+                <matchScore>100</matchScore>
+                <analysis>The prices are exactly the same, resulting in a perfect match score of 100.</analysis>
+            </example>
+            <example>
+                <userProvidedPrice>100.00</userProvidedPrice>
+                <scrapedPrice>95.00</scrapedPrice>
+                <matchScore>95</matchScore>
+                <analysis>The scraped price is slightly lower than the user-provided price, resulting in a high match score of 95.</analysis>
+            </example>
+            <example>
+                <userProvidedPrice>100.00</userProvidedPrice>
+                <scrapedPrice>80.00</scrapedPrice>
+                <matchScore>80</matchScore>
+                <analysis>There is a noticeable difference between the user-provided price and the scraped price, leading to a lower match score of 80.</analysis>
+            </example>
+        </examples>
         
-        <userProvidedData>
-            <price>{user_price}</price>
-            <description>{user_description}</description>
-        </userProvidedData>
-        
-        <scrapedData>
-            <price>{scraped_price}</price>
-            <description>{scraped_description}</description>
-        </scrapedData>
-        
-        <outputRequirements>
-            <matchScore>
-                <description>A score between 0 and 100, where 100 means the data is an exact match.</description>
-            </matchScore>
-            <isMatch>
-                <description>Indicate whether the data matches or not (Yes/No).</description>
-            </isMatch>
-            <detailedAnalysis>
-                <description>A detailed analysis of the comparison.</description>
-            </detailedAnalysis>
-        </outputRequirements>
+        <userProvidedPrice>{user_price}</userProvidedPrice>
+        <scrapedPrice>{scraped_price}</scrapedPrice>
+        <matchScore>{score}</matchScore>
+        <detailedAnalysis>
+            <description>Provide only a brief two-line analysis focused on the price comparison. Avoid any additional details.</description>
+        </detailedAnalysis>
         
         <outputFormat>
             <format type="JSON">
                 <![CDATA[
                 {{
-                    "match_score": int,
-                    "is_match": "Yes" or "No",
-                    "analysis": "Your detailed analysis here."
+                    "match_score": {score},
+                    "analysis": "Your concise, two-line analysis of the price comparison here."
                 }}
                 ]]>
             </format>
@@ -115,13 +121,45 @@ def generate_prompt(user_price, user_description, scraped_price, scraped_descrip
     </prompt>
     """
     return prompt.strip()
+def extract_numerical_price(price_str):
+    # Remove any commas and currency symbols from the price string
+    cleaned_price_str = re.sub(r'[^\d\.]', '', price_str)
+    
+    # Find the first sequence of digits, optionally followed by a decimal point and more digits
+    match = re.search(r'\d+\.?\d*', cleaned_price_str)
+    
+    if match:
+        return float(match.group())
+    else:
+        raise ValueError("No numerical part found in the price string.")
+def calculate_match_score(user_price, scraped_price):
+    # Ensure both prices are now floats
+    user_price = float(user_price)
+    fscraper_price = float(scraped_price)
+    
+    print(f"Comparing User price: {user_price} with Scraped price: {fscraper_price}")
+    
+    # Calculate the absolute difference between the prices
+    absolute_difference = abs(user_price - fscraper_price)
+    print(f"Absolute difference: {absolute_difference}")
+    
+    # Calculate the percentage difference relative to the user-provided price
+    percentage_difference = (absolute_difference / user_price) * 100
+    print(f"Percentage difference: {percentage_difference}")
+    
+    # Calculate the match score
+    score = max(0, 100 - percentage_difference)
+    print(f"Calculated score: {score}")
+    
+    # Return the score as an integer
+    return int(score)
+
 
 def get_completion(prompt):
-   
     try:
         bedrock = boto3.client(service_name="bedrock-runtime", region_name=REGION_NAME)
         body = json.dumps({
-            "max_tokens": 256,
+            "max_tokens": 100,  # Limit the response length to avoid excess details
             "messages": [{"role": "user", "content": prompt}],
             "anthropic_version": "bedrock-2023-05-31"
         })
@@ -132,6 +170,7 @@ def get_completion(prompt):
     except Exception as e:
         print(f"Error communicating with Claude: {e}")
         raise e
+
 
 
 def handle_katranji(response):
@@ -389,4 +428,3 @@ def main():
     print(result)
 if __name__ == "__main__":
     main()
-

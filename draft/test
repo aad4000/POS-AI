@@ -18,7 +18,7 @@ def generate_prompt(user_price, user_description, scraped_price, scraped_descrip
     - Description: "{user_description}"
 
     Scraped Data:
-    - Price: {scraped_price}
+    - Price: {scraped_price}+"$"
     - Description: "{scraped_description}"
 
     Provide:
