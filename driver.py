@@ -2,7 +2,10 @@ from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
-from webdriver_manager.firefox import GeckoDriverManager
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+
+
 
 
 
@@ -19,15 +22,16 @@ driver_options = Options()
 service = Service()
 
 # > driver
-driver = webdriver.Firefox(service=service , options= driver_options)
-driver.set_page_load_timeout(60)  # Timeout 
+driver = webdriver.Chrome(service=service , options= driver_options)
+driver.set_page_load_timeout(120)  # Timeout 
 
 
 # > get page
 url = "https://gamebroslb.com/products/hyperx-alloy-origins-pbt-hx-red-mechanical-gaming-keyboard"
 
 driver.get(url)
-html_content = driver.page_source  
+wait = WebDriverWait(driver, 120)
+wait.until(EC.presence_of_element_located((By.TAG_NAME, 'body')))
 
 # > get element
 element = driver.find_element(By.CSS_SELECTOR, 'div.product__title h1')
