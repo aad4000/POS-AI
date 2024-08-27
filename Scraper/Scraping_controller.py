@@ -1,23 +1,11 @@
 from urllib.parse import urlparse
 from flask import Flask, request, jsonify
-from .Scraping_service import (
-    handle_katranji, handle_ayoub_computer, fetch_product, 
-    handle_alibaba, handle_newegg, handle_techzone, generate_prompt, 
-    get_completion, handle_amazon, calculate_match_score, extract_numerical_price
-)
+from .Scraping_service import *
 import json
 from .input_schema import InputSchema
 from marshmallow import Schema, fields, ValidationError
 
 
-known_companies = {
-    "katranji.com": handle_katranji,
-    "ayoubcomputers.com": handle_ayoub_computer,
-    "www.alibaba.com": handle_alibaba,
-    "newegg.com": handle_newegg,
-    "techzone.com.lb": handle_techzone,
-    "www.amazon.com": handle_amazon,
-}
 
 
 def check_validity():

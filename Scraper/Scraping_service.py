@@ -1,21 +1,26 @@
-import boto3
-import requests
-import json
-from bs4 import BeautifulSoup
-from urllib.parse import urlparse
-import random
 import re
+from urllib.parse import urlparse
+import requests
+import random
+import requests
+from bs4 import BeautifulSoup
+import re
+import requests
 from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.firefox.service import Service as FirefoxService
+from selenium.webdriver.firefox.options import Options as FirefoxOptions
+from selenium.webdriver.chrome.service import Service as ChromeService
+from selenium.webdriver.chrome.options import Options as ChromeOptions
 from selenium.webdriver.common.by import By
+from selenium.webdriver.common.proxy import Proxy, ProxyType
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from webdriver_manager.chrome import ChromeDriverManager
-import requests
-
-from botocore.exceptions import ClientError
-
+import random
+import time
+import random
+from Scraper.static import *
+from Scraper.captcha_service import *
+from Scraper.driver_service import *
 def get_valid_proxy(proxy_file):
     """
     Reads the proxies from the proxy file, shuffles them, 
@@ -36,7 +41,6 @@ def get_valid_proxy(proxy_file):
     
     except Exception as e:
         return {"error": f"An unexpected error occurred: {str(e)}"}
-
 def get_response(url):
     proxy_file = 'lib/active_proxies.txt'
     max_retries = 5
@@ -64,11 +68,104 @@ def get_response(url):
             last_error = str(e)
     
     return {"error": f"All proxies failed after {max_retries} retries.", "last_error": last_error}
+def extract_company_name(url):
+    """Extracts the company name (domain) from the netloc."""
+    netloc = urlparse(url).netloc
+    company_name = netloc.lower().replace("www.", "").replace(".com", "")
+    print(f"Extracted company name: {company_name}")
+    return company_name
+def dynamic_bs4(url):
+    
+    domain = extract_company_name(url)  # assuming url already validated
+    config = CONFIG_BS4[domain]
 
+    response = get_response(url)
+    if not response:
+        return {"error": "No response"}
 
+    soup = BeautifulSoup(response.content, "html.parser")
 
+    # > mandatory config
+    description_selector = config["description_selector"]
+    price_selector = config["price_selector"]
+
+    description_element = soup.select_one(description_selector)
+    
+    if isinstance(price_selector, list):
+        # Combine the text from each part to form the full price
+        price_parts = [soup.select_one(selector).get_text(strip=True) for selector in price_selector if soup.select_one(selector)]
+        price = ''.join(price_parts) if price_parts else "Price not found"
+    else:
+        price_element = soup.select_one(price_selector)
+        price = price_element.get_text(strip=True) if price_element else "Price not found"
+
+    # > return values
+    return {
+        "price": price,
+        "description": description_element.get_text(strip=True) if description_element else "Description not found"
+    }
+
+def dynamic_selenium(url):
+    try:
+        domain = extract_company_name(url)  # assuming url already validated
+        config = CONFIG_SELENIUM[domain]
+
+        driver = chrome_driver_setup()
+        driver.get(url)
+
+        if "captcha" in config:
+            captchaType = config["captcha"]
+            handle_captcha(captchaType, driver)
+
+        # > mandatory config
+        description_selector = config["description_selector"]
+        price_selector = config["price_selector"]
+
+        # Get description element
+        description_element = wait_for_element(driver, By.CSS_SELECTOR, description_selector)
+
+        # Check if price_selector is a list
+        if isinstance(price_selector, list):
+            # Use wait_for_element3 if price_selector is a list
+            price_elements = wait_for_element3(driver, By.CSS_SELECTOR, price_selector)
+            # Combine the text from each part to form the full price
+            price = ''.join([element.text.strip() for element in price_elements])
+        else:
+            # Use wait_for_element if price_selector is not a list
+            price_element = wait_for_element(driver, By.CSS_SELECTOR, price_selector)
+            price = price_element.text.strip() if price_element else "Price not found"
+
+        # > return values
+        return {
+            "price": price if price else "Price not found",
+            "description": description_element.text.strip() if description_element else "Description not found"
+        }
+
+    finally:
+        driver.quit()
+def fetch_product(url):
+    company_name = extract_company_name(url)
+    
+    # Debugging: Check which company is being matched
+    print(f"Checking company name: {company_name}")
+    
+    if company_name in CONFIG_BS4:
+        print(f"Company found in known_companies: {company_name}")
+       
+        handler_function = dynamic_bs4(url)
+        return handler_function
+    
+    if company_name in CONFIG_SELENIUM:
+        print(f"Company found in known_companiess: {company_name}")
+        handler_function2 = dynamic_selenium(url)
+        return handler_function2
+    
+    else:
+        print(f"Company not supported: {company_name}")
+        return {"error": f"Company not supported: {company_name}"}
 REGION_NAME = "us-east-1"
 MODEL_NAME = "anthropic.claude-3-5-sonnet-20240620-v1:0"
+
 
 
 def generate_prompt(user_price, scraped_price, score):
@@ -149,8 +246,6 @@ def calculate_match_score(user_price, scraped_price):
     
    
     return int(score)
-
-
 def get_completion(prompt):
     try:
         bedrock = boto3.client(service_name="bedrock-runtime", region_name=REGION_NAME)
@@ -167,260 +262,3 @@ def get_completion(prompt):
         print(f"Error communicating with Claude: {e}")
         raise e
 
-
-
-def handle_katranji(response):
-    if response.status_code == 200:
-        soup = BeautifulSoup(response.content, 'html.parser')
-        description = soup.find('div', class_='text-xl md:text-2xl xl:text-3xl font-bold mb-4 w-3/4')
-        price = soup.find('div', class_='font-bold text-[2.5rem]')
-        
-        return {
-            "price": price.get_text(strip=True) if price else "Price not found",
-            "description": description.get_text(strip=True) if description else "Description not found"
-        }
-    else:
-        return {"error": f"Request failed with status code {response.status_code}"}
-
-def handle_alibaba(response):
-    if response:
-        soup = BeautifulSoup(response.text, "html.parser")
-        title = soup.find("h1", title=True)
-        price_element = soup.find('div', class_='price')
-
-        if not price_element:
-            price_spans = soup.find_all('span')
-            price_element = next((span for span in price_spans if "$" in span.text), None)
-
-        return {
-            "price": price_element.get_text(strip=True) if price_element else "Price not found",
-            "description": title.get_text(strip=True) if title else "Description not found"
-        }
-    else:
-        return {"error": "No response"}
-
-def handle_newegg(response):
-    if response:
-        soup = BeautifulSoup(response.text, "html.parser")
-        title = soup.find("h1", class_="product-title")
-        price_li = soup.find('li', class_='price-current')
-
-        if price_li:
-            dollar_part = price_li.find('strong')
-            cents_part = price_li.find('sup')
-            price = f"${dollar_part.get_text(strip=True)}{cents_part.get_text(strip=True)}" if dollar_part and cents_part else f"${dollar_part.get_text(strip=True)}" if dollar_part else "Price not found"
-        else:
-            price = "Price not found"
-
-        return {
-            "price": price,
-            "description": title.get_text(strip=True) if title else "Description not found"
-        }
-    else:
-        return {"error": "No response"}
-
-def handle_ayoub_computer(response):
-    if response:
-        soup = BeautifulSoup(response.text, "html.parser")
-        title = soup.find("h1", class_="productView-title")
-        price = soup.find("span", class_="price price--withoutTax price--main")
-
-        return {
-            "price": price.get_text(strip=True) if price else "Price not found",
-            "description": title.get_text(strip=True) if title else "Description not found"
-        }
-    else:
-        return {"error": "No response"}
-
-def handle_techzone(response):
-    if response:
-        soup = BeautifulSoup(response.text, "html.parser")
-        title = soup.find("h1", class_="product_title entry-title wd-entities-title")
-        price = soup.find('p', class_='price').find('span', class_='woocommerce-Price-amount')
-
-        return {
-            "price": price.get_text(strip=True) if price else "Price not found",
-            "description": title.get_text(strip=True) if title else "Description not found"
-        }
-    else:
-        return {"error": "No response"}
-
-# Step 5: Map Companies to Handlers
-# def get_secret(secret_name):
-#     # Initialize a session using Amazon Secrets Manager
-#     client = boto3.client('secretsmanager', region_name='us-east-1')
-
-#     try:
-#         # Retrieve the secret
-#         get_secret_value_response = client.get_secret_value(SecretId=secret_name)
-#         secret = get_secret_value_response['SecretString']
-
-#         # Print the secret string to inspect it
-#         print("Secret String:", repr(secret))
-
-#         # Load the secret string as JSON
-#         secret_json = json.loads(secret)
-#         return secret_json
-#     except ClientError as e:
-#         raise e
-#     except json.JSONDecodeError as json_err:
-#         print(f"Error decoding JSON: {json_err}")
-#         raise
-
-def handle_amazon(url, max_attempts=5):
-    # AWS credentials (For testing purposes only. Avoid hardcoding in production)
-    # secret = get_secret('AcessKey')
-
-    # Initialize the Textract client with credentials
-    textract_client = boto3.client(
-        'textract',
-        # aws_access_key_id=secret['aws_access_key_id'],
-        # aws_secret_access_key=secret['aws_secret_access_key'],
-        region_name='us-east-1'
-    )
-
-    # Setup Chrome driver in headless mode
-    chrome_options = Options()
-    chrome_options.add_argument("--headless")
-    chrome_options.add_argument("--disable-gpu")
-    chrome_options.add_argument("--window-size=1920,1080")
-    chrome_options.add_argument("--no-sandbox")
-    chrome_options.add_argument("--disable-dev-shm-usage")
-
-    service = Service(ChromeDriverManager().install())
-    driver = webdriver.Chrome(service=service, options=chrome_options)
-
-    # Navigate to the webpage
-    driver.get(url)
-
-    attempt = 0
-
-    while attempt < max_attempts:
-        attempt += 1
-        try:
-            # Wait for the CAPTCHA image to be present
-            captcha_image_element = WebDriverWait(driver, 10).until(
-                EC.presence_of_element_located((By.XPATH, "//div[@class='a-row a-text-center']/img"))
-            )
-            captcha_image_url = captcha_image_element.get_attribute('src')
-
-            # Download the CAPTCHA image
-            captcha_image = requests.get(captcha_image_url).content
-
-            # Send the image directly to Textract
-            response = textract_client.detect_document_text(
-                Document={
-                    'Bytes': captcha_image
-                }
-            )
-
-            # Extract the text detected by Textract
-            captcha_text = ''
-            for item in response["Blocks"]:
-                if item["BlockType"] == "LINE":
-                    captcha_text += item["Text"]
-
-            print(f"Solved CAPTCHA (Attempt {attempt}): '{captcha_text}'")
-
-            # Locate the CAPTCHA input field and input the CAPTCHA text
-            input_element = driver.find_element(By.ID, "captchacharacters")
-            input_element.send_keys(captcha_text)
-
-            # Locate the submit button and click on it
-            submit_button = WebDriverWait(driver, 60).until(
-                EC.element_to_be_clickable((By.XPATH, "//button[@type='submit' and @class='a-button-text']"))
-            )
-            submit_button.click()
-
-            # Check if CAPTCHA is still present
-            try:
-                WebDriverWait(driver, 5).until(
-                    EC.presence_of_element_located((By.XPATH, "//div[@class='a-row a-text-center']/img"))
-                )
-                print(f"CAPTCHA still present after attempt {attempt}. Retrying...")
-                continue  # CAPTCHA is still present, so continue the loop to solve it again
-            except:
-                # CAPTCHA is not present, proceed to scrape the title and price
-                break
-
-        except Exception as e:
-            print(f"Error during CAPTCHA solving attempt {attempt}: {str(e)}")
-            continue
-
-    # Scrape the title after solving CAPTCHA(s)
-    try:
-        title_element = WebDriverWait(driver, 30).until(
-            EC.presence_of_element_located((By.ID, "productTitle"))
-        )
-        title = title_element.text.strip()
-
-        # Scrape the price
-        price_symbol_element = WebDriverWait(driver, 30).until(
-            EC.presence_of_element_located((By.XPATH, "//span[@class='a-price-symbol']"))
-        )
-        price_whole_element = WebDriverWait(driver, 30).until(
-            EC.presence_of_element_located((By.XPATH, "//span[@class='a-price-whole']"))
-        )
-        price_fraction_element = WebDriverWait(driver, 30).until(
-            EC.presence_of_element_located((By.XPATH, "//span[@class='a-price-fraction']"))
-        )
-
-        # Combine the parts of the price
-        price = f"{price_symbol_element.text}{price_whole_element.text}.{price_fraction_element.text}"
-        result = {
-            "title": title,
-            "price": price
-        }
-        return result
-
-    finally:
-        # Close the driver
-        driver.quit()
-
-known_companies = {
-    "katranji.com": handle_katranji,
-    "www.alibaba.com": handle_alibaba,
-    "ayoubcomputers.com": handle_ayoub_computer,
-    "newegg.com": handle_newegg,
-    "techzone.com.lb": handle_techzone
-}
-known_companiess = {
-    "amazon.com": handle_amazon
-}
-
-def fetch_product(url):
-    company_name = extract_company_name(urlparse(url).netloc)
-    
-    # Debugging: Check which company is being matched
-    print(f"Checking company name: {company_name}")
-    
-    if company_name in known_companies:
-        print(f"Company found in known_companies: {company_name}")
-        response = get_response(url)
-        if isinstance(response, dict) and "error" in response:
-            return response 
-        handler_function = known_companies[company_name]
-        return handler_function(response)
-    
-    if company_name in known_companiess:
-        print(f"Company found in known_companiess: {company_name}")
-        handler_function = known_companiess[company_name]
-        return handler_function(url)
-    
-    else:
-        print(f"Company not supported: {company_name}")
-        return {"error": f"Company not supported: {company_name}"}
-
-def extract_company_name(netloc):
-    """Extracts the company name (domain) from the netloc."""
-    company_name = netloc.lower().replace("www.", "")
-    print(f"Extracted company name: {company_name}")
-    return company_name
-
-
-def main():
-    url = "https://www.amazon.com/SAMSUNG-Business-Touchscreen-NP944XGK-KG1US-Moonstone/dp/B0CVBKWH12"
-    result = handle_amazon(url)
-    print(result)
-if __name__ == "__main__":
-    main()
