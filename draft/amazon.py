@@ -22,7 +22,7 @@ def get_secret(secret_name):
     except ClientError as e:
         raise e
 
-def amazon_captcha_solver(url, max_attempts=5):
+def handle_amazon(url, max_attempts=5):
     # AWS credentials (For testing purposes only. Avoid hardcoding in production)
     secret = get_secret('AcessKey')
 

@@ -65,12 +65,12 @@ def get_response(url):
     
     return {"error": f"All proxies failed after {max_retries} retries.", "last_error": last_error}
 
-# Step 3: Define the Claude Interaction Function
+
 
 REGION_NAME = "us-east-1"
 MODEL_NAME = "anthropic.claude-3-5-sonnet-20240620-v1:0"
 
-# Function to interact with Claude model via AWS Bedrock
+
 def generate_prompt(user_price, scraped_price, score):
     """
     Generate a prompt for the Claude model to compare user-provided price with scraped price,
@@ -122,10 +122,10 @@ def generate_prompt(user_price, scraped_price, score):
     """
     return prompt.strip()
 def extract_numerical_price(price_str):
-    # Remove any commas and currency symbols from the price string
+   
     cleaned_price_str = re.sub(r'[^\d\.]', '', price_str)
     
-    # Find the first sequence of digits, optionally followed by a decimal point and more digits
+   
     match = re.search(r'\d+\.?\d*', cleaned_price_str)
     
     if match:
@@ -133,25 +133,21 @@ def extract_numerical_price(price_str):
     else:
         raise ValueError("No numerical part found in the price string.")
 def calculate_match_score(user_price, scraped_price):
-    # Ensure both prices are now floats
+   
     user_price = float(user_price)
     fscraper_price = float(scraped_price)
     
     print(f"Comparing User price: {user_price} with Scraped price: {fscraper_price}")
     
-    # Calculate the absolute difference between the prices
+    
     absolute_difference = abs(user_price - fscraper_price)
     print(f"Absolute difference: {absolute_difference}")
-    
-    # Calculate the percentage difference relative to the user-provided price
     percentage_difference = (absolute_difference / user_price) * 100
     print(f"Percentage difference: {percentage_difference}")
-    
-    # Calculate the match score
     score = max(0, 100 - percentage_difference)
     print(f"Calculated score: {score}")
     
-    # Return the score as an integer
+   
     return int(score)
 
 
@@ -250,36 +246,36 @@ def handle_techzone(response):
         return {"error": "No response"}
 
 # Step 5: Map Companies to Handlers
-def get_secret(secret_name):
-    # Initialize a session using Amazon Secrets Manager
-    client = boto3.client('secretsmanager', region_name='us-east-1')
+# def get_secret(secret_name):
+#     # Initialize a session using Amazon Secrets Manager
+#     client = boto3.client('secretsmanager', region_name='us-east-1')
 
-    try:
-        # Retrieve the secret
-        get_secret_value_response = client.get_secret_value(SecretId=secret_name)
-        secret = get_secret_value_response['SecretString']
+#     try:
+#         # Retrieve the secret
+#         get_secret_value_response = client.get_secret_value(SecretId=secret_name)
+#         secret = get_secret_value_response['SecretString']
 
-        # Print the secret string to inspect it
-        print("Secret String:", repr(secret))
+#         # Print the secret string to inspect it
+#         print("Secret String:", repr(secret))
 
-        # Load the secret string as JSON
-        secret_json = json.loads(secret)
-        return secret_json
-    except ClientError as e:
-        raise e
-    except json.JSONDecodeError as json_err:
-        print(f"Error decoding JSON: {json_err}")
-        raise
+#         # Load the secret string as JSON
+#         secret_json = json.loads(secret)
+#         return secret_json
+#     except ClientError as e:
+#         raise e
+#     except json.JSONDecodeError as json_err:
+#         print(f"Error decoding JSON: {json_err}")
+#         raise
 
 def handle_amazon(url, max_attempts=5):
     # AWS credentials (For testing purposes only. Avoid hardcoding in production)
-    secret = get_secret('AcessKey')
+    # secret = get_secret('AcessKey')
 
     # Initialize the Textract client with credentials
     textract_client = boto3.client(
         'textract',
-        aws_access_key_id=secret['aws_access_key_id'],
-        aws_secret_access_key=secret['aws_secret_access_key'],
+        # aws_access_key_id=secret['aws_access_key_id'],
+        # aws_secret_access_key=secret['aws_secret_access_key'],
         region_name='us-east-1'
     )
 
@@ -424,7 +420,7 @@ def extract_company_name(netloc):
 
 def main():
     url = "https://www.amazon.com/SAMSUNG-Business-Touchscreen-NP944XGK-KG1US-Moonstone/dp/B0CVBKWH12"
-    result = fetch_product(url)
+    result = handle_amazon(url)
     print(result)
 if __name__ == "__main__":
     main()
