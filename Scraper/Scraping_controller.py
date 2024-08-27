@@ -1,13 +1,9 @@
 from urllib.parse import urlparse
 from flask import request, send_file, jsonify
 import os
-from .Scraping_service import handle_katranji, handle_ayoub_computers, fetch_product, handle_alibaba
+from .Scraping_service import fetch_product
 
-known_companies = {
-    "katranji.com": handle_katranji,
-    "ayoubcomputers.com": handle_ayoub_computers,
-    "www.alibaba.com": handle_alibaba
-}
+
 
 def check_validity():
     data = request.get_json()
