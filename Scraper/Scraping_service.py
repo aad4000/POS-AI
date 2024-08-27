@@ -65,10 +65,13 @@ def get_response(url):
     
     return {"error": f"All proxies failed after {max_retries} retries.", "last_error": last_error}
 
+#! DONE ----------------------------------------------------------
+
 # Step 3: Define the Claude Interaction Function
 
 REGION_NAME = "us-east-1"
 MODEL_NAME = "anthropic.claude-3-5-sonnet-20240620-v1:0"
+SECRET_NAME = 'mg-access-keys'
 
 # Function to interact with Claude model via AWS Bedrock
 def generate_prompt(user_price, scraped_price, score):
@@ -153,8 +156,6 @@ def calculate_match_score(user_price, scraped_price):
     
     # Return the score as an integer
     return int(score)
-
-
 def get_completion(prompt):
     try:
         bedrock = boto3.client(service_name="bedrock-runtime", region_name=REGION_NAME)
@@ -171,7 +172,7 @@ def get_completion(prompt):
         print(f"Error communicating with Claude: {e}")
         raise e
 
-
+# ----------------------------------------------------------------------------------------------
 
 def handle_katranji(response):
     if response.status_code == 200:
@@ -249,31 +250,9 @@ def handle_techzone(response):
     else:
         return {"error": "No response"}
 
-# Step 5: Map Companies to Handlers
-def get_secret(secret_name):
-    # Initialize a session using Amazon Secrets Manager
-    client = boto3.client('secretsmanager', region_name='us-east-1')
-
-    try:
-        # Retrieve the secret
-        get_secret_value_response = client.get_secret_value(SecretId=secret_name)
-        secret = get_secret_value_response['SecretString']
-
-        # Print the secret string to inspect it
-        print("Secret String:", repr(secret))
-
-        # Load the secret string as JSON
-        secret_json = json.loads(secret)
-        return secret_json
-    except ClientError as e:
-        raise e
-    except json.JSONDecodeError as json_err:
-        print(f"Error decoding JSON: {json_err}")
-        raise
-
 def handle_amazon(url, max_attempts=5):
     # AWS credentials (For testing purposes only. Avoid hardcoding in production)
-    secret = get_secret('AcessKey')
+    secret = get_secret(SECRET_NAME)
 
     # Initialize the Textract client with credentials
     textract_client = boto3.client(
@@ -381,17 +360,30 @@ def handle_amazon(url, max_attempts=5):
         # Close the driver
         driver.quit()
 
-known_companies = {
-    "katranji.com": handle_katranji,
-    "www.alibaba.com": handle_alibaba,
-    "ayoubcomputers.com": handle_ayoub_computer,
-    "newegg.com": handle_newegg,
-    "techzone.com.lb": handle_techzone
-}
-known_companiess = {
-    "amazon.com": handle_amazon
-}
+# ----------------------------------------------------------------------------------------------
 
+def get_secret(secret_name):
+    # Initialize a session using Amazon Secrets Manager
+    client = boto3.client('secretsmanager', region_name='us-east-1')
+
+    try:
+        # Retrieve the secret
+        get_secret_value_response = client.get_secret_value(SecretId=secret_name)
+        secret = get_secret_value_response['SecretString']
+
+        # Print the secret string to inspect it
+        print("Secret String:", repr(secret))
+
+        # Load the secret string as JSON
+        secret_json = json.loads(secret)
+        return secret_json
+    except ClientError as e:
+        raise e
+    except json.JSONDecodeError as json_err:
+        print(f"Error decoding JSON: {json_err}")
+        raise
+
+#! NEED CHANGING 
 def fetch_product(url):
     company_name = extract_company_name(urlparse(url).netloc)
     
@@ -421,10 +413,26 @@ def extract_company_name(netloc):
     print(f"Extracted company name: {company_name}")
     return company_name
 
+# ----------------------------------------------------------------------------------------------
+
+known_companies = {
+    "katranji.com": handle_katranji,
+    "www.alibaba.com": handle_alibaba,
+    "ayoubcomputers.com": handle_ayoub_computer,
+    "newegg.com": handle_newegg,
+    "techzone.com.lb": handle_techzone
+}
+known_companiess = {
+    "amazon.com": handle_amazon
+}
+
 
 def main():
-    url = "https://www.amazon.com/SAMSUNG-Business-Touchscreen-NP944XGK-KG1US-Moonstone/dp/B0CVBKWH12"
-    result = fetch_product(url)
-    print(result)
+    # url = "https://www.amazon.com/SAMSUNG-Business-Touchscreen-NP944XGK-KG1US-Moonstone/dp/B0CVBKWH12"
+    # result = fetch_product(url)
+    # print(result)
+    print(get_secret(SECRET_NAME))
+
+
 if __name__ == "__main__":
     main()
