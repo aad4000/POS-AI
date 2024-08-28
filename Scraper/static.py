@@ -1,7 +1,7 @@
 REGION_NAME = "us-east-1"
 MODEL_NAME = "anthropic.claude-3-5-sonnet-20240620-v1:0"
 
-PROXY_FILE = 'lib/active_proxies.txt'
+PROXY_FILE = 'proxy/valid_proxies.txt'
 
 TIMEOUT = 120
 PROXY_TIMEOUT = 10

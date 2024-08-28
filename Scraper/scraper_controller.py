@@ -1,8 +1,8 @@
 from urllib.parse import urlparse
 from flask import Flask, request, jsonify
-from .Scraping_service import *
+from scraper.scraper_service import *
 import json
-from .input_schema import InputSchema
+from .scraper_schema import InputSchema
 from marshmallow import Schema, fields, ValidationError
 
 

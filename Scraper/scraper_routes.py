@@ -1,6 +1,6 @@
 # routes.py
 from flask import Flask
-from .Scraping_controller import check_validity
+from scraper.scraper_controller import check_validity
 
 def create_app():
     app = Flask(__name__)

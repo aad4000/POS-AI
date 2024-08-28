@@ -12,7 +12,7 @@ from selenium.webdriver.support import expected_conditions as EC
 import random
 import time
 import random
-from Scraper.static import *
+from scraper.static import *
 
 def get_valid_proxy(proxy_file):
     """

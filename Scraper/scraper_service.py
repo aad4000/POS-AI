@@ -18,9 +18,9 @@ from selenium.webdriver.support import expected_conditions as EC
 import random
 import time
 import random
-from Scraper.static import *
-from Scraper.captcha_service import *
-from Scraper.driver_service import *
+from scraper.static import *
+from captcha.captcha_service import *
+from driver.driver_service import *
 def get_valid_proxy(proxy_file):
     """
     Reads the proxies from the proxy file, shuffles them, 
@@ -115,7 +115,7 @@ def dynamic_selenium(url):
         domain = extract_company_name(url)  # assuming url is already validated
         config = CONFIG_SELENIUM[domain]
 
-        driver = chrome_driver_setup()
+        driver = firefox_driver_setup()
         driver.get(url)
 
         if "captcha" in config:
