@@ -37,14 +37,11 @@ CONFIG_BS4 = {
     },
     "460estore": {
         "description_selector": "h1.namne_details",
-        "price_selector": "span[itemprop='price'][content='5']"
+        "price_selector": "span[itemprop='price'][content]"
     },
     "katranji":{ "description_selector": "div.text-xl.md\\:text-2xl.xl\\:text-3xl.font-bold.mb-4.w-3\\/4",
         "price_selector": "div.font-bold.text-\\[2\\.5rem\\]"},
-    "alibaba":{
-        "description_selector": "h1[title]",
-        "price_selector": "div.product-price div.price-list div.price-item:first-of-type div.price span"
-    },
+   
     "abedtahan":{
         "description_selector": "span.base",
         "price_selector":"span.price"
