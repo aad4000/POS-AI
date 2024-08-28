@@ -1,5 +1,5 @@
 
-from Scraper.Scraping_routes import create_app
+from scraper.scraper_routes import create_app
 
 app = create_app()
 

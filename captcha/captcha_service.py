@@ -15,7 +15,8 @@ import time
 import random
 import boto3
 from botocore.exceptions import ClientError
-from Scraper.driver_service import *
+from driver.driver_service import *
+from scraper.static import *
 
 
 def get_secret(secret_name):
