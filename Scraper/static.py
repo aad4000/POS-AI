@@ -12,7 +12,7 @@ GET_RESPONSE_MAX_ATTEMPS = 5
 
 CONFIG_SELENIUM = {
     
-    "amazon" : {
+     "amazon" : {
         "description_selector": "#productTitle",
         "price_selector": ["span.a-price-symbol", "span.a-price-whole", "span.a-price-fraction"],
         "captcha": "image_text"},

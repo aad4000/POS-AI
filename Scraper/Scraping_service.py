@@ -112,7 +112,7 @@ def dynamic_bs4(url):
 # TODO review
 def dynamic_selenium(url):
     try:
-        domain = extract_company_name(url)  # assuming url already validated
+        domain = extract_company_name(url)  # assuming url is already validated
         config = CONFIG_SELENIUM[domain]
 
         driver = chrome_driver_setup()
@@ -122,29 +122,47 @@ def dynamic_selenium(url):
             captchaType = config["captcha"]
             handle_captcha(captchaType, driver)
 
-        # TODO 
-        # optional Best practice config
-        # proxy usage
+        # Optional: Best practice config
+        # Proxy usage (if needed)
 
-        # > mandatory config
+        # Mandatory config
         description_selector = config["description_selector"]
         price_selector = config["price_selector"]
 
         # Get description element
         description_element = wait_for_element(driver, By.CSS_SELECTOR, description_selector)
 
-        # Check if price_selector is a list
+        # Handle price selection
+        price = None
         if isinstance(price_selector, list):
-            # Use wait_for_element3 if price_selector is a list
-            price_elements = wait_for_element3(driver, By.CSS_SELECTOR, price_selector)
-            # Combine the text from each part to form the full price
-            price = ''.join([element.text.strip() for element in price_elements])
+            # Extract the price components
+            price_symbol = ""
+            price_whole = ""
+            price_fraction = ""
+            
+            # Loop through selectors and capture text for each component
+            for selector in price_selector:
+                element = wait_for_element(driver, By.CSS_SELECTOR, selector)
+                if element:
+                    text = element.text.strip()
+                    if selector.endswith("symbol"):
+                        price_symbol = text
+                    elif selector.endswith("whole"):
+                        price_whole = text
+                    elif selector.endswith("fraction"):
+                        price_fraction = text
+            
+            # Combine the components to form the final price
+            if price_whole and price_fraction:
+                price = f"{price_symbol}{price_whole}.{price_fraction}"
+            elif price_whole:
+                price = f"{price_symbol}{price_whole}"
         else:
-            # Use wait_for_element if price_selector is not a list
+            # Use wait_for_element if price_selector is a single selector
             price_element = wait_for_element(driver, By.CSS_SELECTOR, price_selector)
             price = price_element.text.strip() if price_element else "Price not found"
 
-        # > return values
+        # Return values
         return {
             "price": price if price else "Price not found",
             "description": description_element.text.strip() if description_element else "Description not found"
@@ -152,6 +170,7 @@ def dynamic_selenium(url):
 
     finally:
         driver.quit()
+
 
 def fetch_product(url):
     company_name = extract_company_name(url)

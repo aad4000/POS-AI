@@ -81,22 +81,24 @@ def wait_for_element(driver, by, selector, timeout=TIMEOUT):
     )
 
 # TODO generalize this
-def wait_for_element3(driver, by, selectors, timeout=TIMEOUT):
-    # Construct the CSS selector string by joining the individual selectors
-    combined_selector = f"{selectors[0]}, {selectors[1]}, {selectors[2]}"
+# def wait_for_element3(driver, by, selectors, timeout=10):
+#     # Construct the CSS selector string by joining the individual selectors
+#     combined_selector = ", ".join(selectors)
     
-    # Wait for the presence of all elements matching the combined selector
-    elements = WebDriverWait(driver, timeout).until(
-        EC.presence_of_all_elements_located(
-            (by, combined_selector)
-        )
-    )
+#     # Wait for the presence of the first element matching the combined selector
+#     element = WebDriverWait(driver, timeout).until(
+#         EC.presence_of_element_located(
+#             (by, combined_selector)
+#         )
+#     )
     
-    # Debugging: Print the text of each element
-    for i, element in enumerate(elements):
-        print(f"Element {i}: {element.text.strip()}")
+#     # Debugging: Print the text of the element
+#     print(f"Found Element: {element.text.strip()}")
     
-    return elements
+#     return element
+
+
+
 
 
 def wait_for_element_clickable(driver, by, selector, timeout=TIMEOUT):
