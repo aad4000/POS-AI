@@ -47,6 +47,7 @@ def handle_captcha(captcha_type , driver):
     if handler:
         handler(driver)
     else:
+        # > RAISE ERROR INSTEAD
         print(f"No handler available for captcha type: {captcha_type}")
 
 

@@ -80,6 +80,7 @@ def wait_for_element(driver, by, selector, timeout=TIMEOUT):
         EC.presence_of_element_located((by, selector))
     )
 
+# TODO generalize this
 def wait_for_element3(driver, by, selectors, timeout=TIMEOUT):
     # Construct the CSS selector string by joining the individual selectors
     combined_selector = f"{selectors[0]}, {selectors[1]}, {selectors[2]}"

@@ -42,9 +42,8 @@ def get_valid_proxy(proxy_file):
     except Exception as e:
         return {"error": f"An unexpected error occurred: {str(e)}"}
 def get_response(url):
-    proxy_file = 'lib/active_proxies.txt'
-    max_retries = 5
-    proxies_json = get_valid_proxy(proxy_file)
+    max_retries = GET_RESPONSE_MAX_ATTEMPS
+    proxies_json = get_valid_proxy(PROXY_FILE)
 
     if "error" in proxies_json:
         return {"error": proxies_json['error']}
@@ -60,7 +59,7 @@ def get_response(url):
         proxy_dict = {scheme: f"{scheme}://{proxy_address}"}
         
         try:
-            response = requests.get(url, proxies=proxy_dict, timeout=10)
+            response = requests.get(url, proxies=proxy_dict, timeout=PROXY_TIMEOUT)
             response.raise_for_status()
             return response
         except requests.exceptions.RequestException as e:
@@ -85,14 +84,19 @@ def dynamic_bs4(url):
 
     soup = BeautifulSoup(response.content, "html.parser")
 
+    # TODO 
+    # optional Best practice config
+
     # > mandatory config
     description_selector = config["description_selector"]
     price_selector = config["price_selector"]
 
     description_element = soup.select_one(description_selector)
+    description = description_element.get_text(strip=True) if description_element else "Description not found"
     
     if isinstance(price_selector, list):
         # Combine the text from each part to form the full price
+        # TODO make this a function
         price_parts = [soup.select_one(selector).get_text(strip=True) for selector in price_selector if soup.select_one(selector)]
         price = ''.join(price_parts) if price_parts else "Price not found"
     else:
@@ -102,9 +106,10 @@ def dynamic_bs4(url):
     # > return values
     return {
         "price": price,
-        "description": description_element.get_text(strip=True) if description_element else "Description not found"
+        "description": description
     }
 
+# TODO review
 def dynamic_selenium(url):
     try:
         domain = extract_company_name(url)  # assuming url already validated
@@ -116,6 +121,10 @@ def dynamic_selenium(url):
         if "captcha" in config:
             captchaType = config["captcha"]
             handle_captcha(captchaType, driver)
+
+        # TODO 
+        # optional Best practice config
+        # proxy usage
 
         # > mandatory config
         description_selector = config["description_selector"]
@@ -143,6 +152,7 @@ def dynamic_selenium(url):
 
     finally:
         driver.quit()
+
 def fetch_product(url):
     company_name = extract_company_name(url)
     
@@ -163,8 +173,8 @@ def fetch_product(url):
     else:
         print(f"Company not supported: {company_name}")
         return {"error": f"Company not supported: {company_name}"}
-REGION_NAME = "us-east-1"
-MODEL_NAME = "anthropic.claude-3-5-sonnet-20240620-v1:0"
+    
+
 
 
 
@@ -229,6 +239,7 @@ def extract_numerical_price(price_str):
         return float(match.group())
     else:
         raise ValueError("No numerical part found in the price string.")
+    
 def calculate_match_score(user_price, scraped_price):
    
     user_price = float(user_price)
@@ -246,6 +257,7 @@ def calculate_match_score(user_price, scraped_price):
     
    
     return int(score)
+
 def get_completion(prompt):
     try:
         bedrock = boto3.client(service_name="bedrock-runtime", region_name=REGION_NAME)
