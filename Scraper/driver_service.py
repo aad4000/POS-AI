@@ -64,7 +64,7 @@ def chrome_driver_setup():
     # proxy_host, proxy_port = proxy.replace("http://", "").split(':')
 
     options = ChromeOptions()
-    options.add_argument("--headless")        
+    # options.add_argument("--headless")        
     # options.add_argument(f'--proxy-server={proxy}')
     # print(f"using proxy : {proxy}")
 

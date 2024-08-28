@@ -21,9 +21,12 @@ CONFIG_SELENIUM = {
         "price_selector": ".price--currentPriceText--V8_y_b5",
         "captcha": "image_text"
     },
-
+    
     
     }
+
+    
+    
 
 
 
@@ -42,9 +45,9 @@ CONFIG_BS4 = {
         "description_selector": "h1[title]",
         "price_selector": "div.product-price div.price-list div.price-item:first-of-type div.price span"
     },
-    "newegg":{
-        "description_selector": "h1.product-title",
-        "price_selector":["li.price-current strong","li.price-current sup"]
+    "abedtahan":{
+        "description_selector": "span.base",
+        "price_selector":"span.price"
     },
     "ayoubcomputers":{
         "description_selector": "h1.productView-title",
@@ -59,7 +62,10 @@ CONFIG_BS4 = {
         "price_selector" : "div.x-price-primary span.ux-textspans"
 
     },
+  
+
     }
+    
 
     
 

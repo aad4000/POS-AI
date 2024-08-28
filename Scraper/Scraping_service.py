@@ -260,7 +260,8 @@ def calculate_match_score(user_price, scraped_price):
 
 def get_completion(prompt):
     try:
-        bedrock = boto3.client(service_name="bedrock-runtime", region_name=REGION_NAME)
+        # bedrock = boto3.client(service_name="bedrock-runtime", region_name=REGION_NAME)
+        bedrock = boto3.client(service_name="bedrock-runtime", region_name='us-west-2')
         body = json.dumps({
             "max_tokens": 100,  # Limit the response length to avoid excess details
             "messages": [{"role": "user", "content": prompt}],
