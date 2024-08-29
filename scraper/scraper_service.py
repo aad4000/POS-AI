@@ -21,6 +21,8 @@ import random
 from scraper.static import *
 from captcha.captcha_service import *
 from driver.driver_service import *
+
+
 def get_valid_proxy(proxy_file):
     """
     Reads the proxies from the proxy file, shuffles them, 
@@ -41,6 +43,8 @@ def get_valid_proxy(proxy_file):
     
     except Exception as e:
         return {"error": f"An unexpected error occurred: {str(e)}"}
+
+
 def get_response(url):
     max_retries = GET_RESPONSE_MAX_ATTEMPS
     proxies_json = get_valid_proxy(PROXY_FILE)
@@ -67,12 +71,16 @@ def get_response(url):
             last_error = str(e)
     
     return {"error": f"All proxies failed after {max_retries} retries.", "last_error": last_error}
+
+
 def extract_company_name(url):
     """Extracts the company name (domain) from the netloc."""
     netloc = urlparse(url).netloc
     company_name = netloc.lower().replace("www.", "").replace(".com", "")
     print(f"Extracted company name: {company_name}")
     return company_name
+
+
 def dynamic_bs4(url):
     
     domain = extract_company_name(url)  # assuming url already validated
@@ -108,6 +116,7 @@ def dynamic_bs4(url):
         "price": price,
         "description": description
     }
+
 
 # TODO review
 def dynamic_selenium(url):
@@ -247,6 +256,8 @@ def generate_prompt(user_price, scraped_price, score):
     </prompt>
     """
     return prompt.strip()
+
+
 def extract_numerical_price(price_str):
    
     cleaned_price_str = re.sub(r'[^\d\.]', '', price_str)
@@ -259,6 +270,7 @@ def extract_numerical_price(price_str):
     else:
         raise ValueError("No numerical part found in the price string.")
     
+
 def calculate_match_score(user_price, scraped_price):
    
     user_price = float(user_price)
@@ -276,6 +288,7 @@ def calculate_match_score(user_price, scraped_price):
     
    
     return int(score)
+
 
 def get_completion(prompt):
     try:

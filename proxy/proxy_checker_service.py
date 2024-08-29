@@ -6,7 +6,7 @@ q = queue.Queue()
 valid_proxies = []
 
 # Read the proxies from a file and populate the queue
-with open('proxy.txt') as f:
+with open('./proxy.txt') as f:
     proxies = f.read().split('\n')
     for proxy in proxies:
         q.put(proxy)
@@ -17,7 +17,7 @@ def check_proxy(q):
         try:
             response = requests.get('https://httpbin.org/ip', proxies={'http': proxy, 'https': proxy}, timeout=5)
             if response.status_code == 200:
-                with open('valid_proxy.txt', 'a') as f:
+                with open('./valid_proxy.txt', 'a') as f:
                     f.write(proxy + '\n')
         except:
             continue
@@ -26,6 +26,7 @@ def check_proxy(q):
 
 # Create and start threads
 threads = []
+
 for i in range(10):
     t = threading.Thread(target=check_proxy, args=(q,))
     t.start()
