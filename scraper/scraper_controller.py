@@ -2,7 +2,7 @@ from urllib.parse import urlparse
 from flask import Flask, request, jsonify
 from scraper.scraper_service import *
 import json
-from .scraper_schema import InputSchema
+from scraper.scraper_schema import InputSchema
 from marshmallow import Schema, fields, ValidationError
 
 
@@ -12,10 +12,11 @@ def check_validity():
     try:
         
         input_schema = InputSchema()
-        
         data = input_schema.load(request.get_json())
+
     except ValidationError as err:
         return jsonify({"errors": err.messages}), 400
+
 
     url = data['url']
     description = data['description']
@@ -39,8 +40,10 @@ def check_validity():
             extracted_price = extract_numerical_price(scraped_price) 
         except ValueError as e:
             return jsonify({"error": f"Price extraction failed: {str(e)}"}), 500
+        
     elif isinstance(scraped_price, (int, float)):
         extracted_price = float(scraped_price)
+        
     else:
         return jsonify({"error": f"Unexpected price format: {scraped_price} of type {type(scraped_price)}"}), 500
 
