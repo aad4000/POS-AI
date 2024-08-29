@@ -115,7 +115,7 @@ def dynamic_selenium(url):
         domain = extract_company_name(url)  # assuming url is already validated
         config = CONFIG_SELENIUM[domain]
 
-        driver = firefox_driver_setup()
+        driver = chrome_driver_setup()
         driver.get(url)
 
         if "captcha" in config:
