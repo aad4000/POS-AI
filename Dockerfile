@@ -10,12 +10,11 @@ WORKDIR /app
 # Copy the current directory contents into the container at /app
 COPY . /app
 
-# Install the dependencies
-RUN pip install --upgrade pip && \
-    pip install -r requirements.txt
-
-# Install dependencies for Chrome and other required packages
-RUN apt-get update && apt-get install -y \
+# Install Python and system dependencies
+RUN apt-get update && \
+    apt-get -y upgrade && \
+    apt-get install -y --no-install-recommends \
+    apt-utils \
     wget \
     unzip \
     libnss3 \
@@ -34,13 +33,16 @@ RUN apt-get update && apt-get install -y \
     libatk-bridge2.0-0 \
     libatspi2.0-0 \
     libcurl4 \
-    libvulkan1 \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install Chrome
-RUN wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb && \
+    libvulkan1 && \
+    wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb && \
     apt-get install -y ./google-chrome-stable_current_amd64.deb && \
-    rm google-chrome-stable_current_amd64.deb
+    rm google-chrome-stable_current_amd64.deb && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
 
 # Expose the port the app runs on
 EXPOSE 5000

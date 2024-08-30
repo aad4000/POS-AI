@@ -68,11 +68,14 @@ TIMEOUT = 30  # Define your timeout value
 
 
 def chrome_driver_setup():
+    #  Chrome failed to start: exited normally fixin this issue by aadding the following options
     options = Options()
-    # Uncomment the line below if you want to run Chrome headless
-    # options.add_argument("--headless")
+    options.add_argument("--headless")
+    options.add_argument("--no-sandbox")
+    options.add_argument("--disable-dev-shm-usage")
+    options.add_argument("--enable-logging")
+    options.add_argument("--v=1")
 
-    # Set up ChromeDriver using webdriver-manager
     service = Service(ChromeDriverManager().install())
     driver = webdriver.Chrome(service=service, options=options)
     driver.set_page_load_timeout(TIMEOUT)
