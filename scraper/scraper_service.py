@@ -21,8 +21,6 @@ import random
 from scraper.static import *
 from captcha.captcha_service import *
 from driver.driver_service import *
-
-
 def get_valid_proxy(proxy_file):
     """
     Reads the proxies from the proxy file, shuffles them, 
@@ -43,8 +41,6 @@ def get_valid_proxy(proxy_file):
     
     except Exception as e:
         return {"error": f"An unexpected error occurred: {str(e)}"}
-
-
 def get_response(url):
     max_retries = GET_RESPONSE_MAX_ATTEMPS
     proxies_json = get_valid_proxy(PROXY_FILE)
@@ -71,16 +67,12 @@ def get_response(url):
             last_error = str(e)
     
     return {"error": f"All proxies failed after {max_retries} retries.", "last_error": last_error}
-
-
 def extract_company_name(url):
     """Extracts the company name (domain) from the netloc."""
     netloc = urlparse(url).netloc
     company_name = netloc.lower().replace("www.", "").replace(".com", "")
     print(f"Extracted company name: {company_name}")
     return company_name
-
-
 def dynamic_bs4(url):
     
     domain = extract_company_name(url)  # assuming url already validated
@@ -117,39 +109,31 @@ def dynamic_bs4(url):
         "description": description
     }
 
-
 # TODO review
 def dynamic_selenium(url):
+    driver = None
     try:
-        domain = extract_company_name(url)  # assuming url is already validated
+        domain = extract_company_name(url)  # Assuming url is already validated
         config = CONFIG_SELENIUM[domain]
 
         driver = chrome_driver_setup()
         driver.get(url)
 
         if "captcha" in config:
-            captchaType = config["captcha"]
-            handle_captcha(captchaType, driver)
+            captcha_type = config["captcha"]
+            handle_captcha(captcha_type, driver)
 
-        # Optional: Best practice config
-        # Proxy usage (if needed)
-
-        # Mandatory config
         description_selector = config["description_selector"]
         price_selector = config["price_selector"]
 
-        # Get description element
         description_element = wait_for_element(driver, By.CSS_SELECTOR, description_selector)
 
-        # Handle price selection
         price = None
         if isinstance(price_selector, list):
-            # Extract the price components
             price_symbol = ""
             price_whole = ""
             price_fraction = ""
             
-            # Loop through selectors and capture text for each component
             for selector in price_selector:
                 element = wait_for_element(driver, By.CSS_SELECTOR, selector)
                 if element:
@@ -161,25 +145,26 @@ def dynamic_selenium(url):
                     elif selector.endswith("fraction"):
                         price_fraction = text
             
-            # Combine the components to form the final price
             if price_whole and price_fraction:
                 price = f"{price_symbol}{price_whole}.{price_fraction}"
             elif price_whole:
                 price = f"{price_symbol}{price_whole}"
         else:
-            # Use wait_for_element if price_selector is a single selector
             price_element = wait_for_element(driver, By.CSS_SELECTOR, price_selector)
             price = price_element.text.strip() if price_element else "Price not found"
 
-        # Return values
         return {
             "price": price if price else "Price not found",
             "description": description_element.text.strip() if description_element else "Description not found"
         }
 
-    finally:
-        driver.quit()
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return {"price": "Error", "description": "Error"}
 
+    finally:
+        if driver:
+            driver.quit()
 
 def fetch_product(url):
     company_name = extract_company_name(url)
@@ -256,20 +241,20 @@ def generate_prompt(user_price, scraped_price, score):
     </prompt>
     """
     return prompt.strip()
-
+import re
 
 def extract_numerical_price(price_str):
-   
     cleaned_price_str = re.sub(r'[^\d\.]', '', price_str)
     
-   
     match = re.search(r'\d+\.?\d*', cleaned_price_str)
     
     if match:
-        return float(match.group())
+        extracted_price = float(match.group())
+        print(f"Extracted numerical price: {extracted_price}")
+        return extracted_price
     else:
-        raise ValueError("No numerical part found in the price string.")
-    
+        print(f"Price string: {price_str}")
+        raise ValueError("No numerical part found in the price string."+price_str)
 
 def calculate_match_score(user_price, scraped_price):
    
@@ -288,7 +273,6 @@ def calculate_match_score(user_price, scraped_price):
     
    
     return int(score)
-
 
 def get_completion(prompt):
     try:

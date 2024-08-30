@@ -13,6 +13,10 @@ import random
 import time
 import random
 from scraper.static import *
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
+from webdriver_manager.chrome import ChromeDriverManager
 
 def get_valid_proxy(proxy_file):
     """
@@ -59,21 +63,22 @@ def firefox_driver_setup():
 
     return driver
 
+TIMEOUT = 30  # Define your timeout value
+
+
+
 def chrome_driver_setup():
-    # proxy = get_valid_proxy(PROXY_FILE)
-    # proxy_host, proxy_port = proxy.replace("http://", "").split(':')
+    options = Options()
+    # Uncomment the line below if you want to run Chrome headless
+    # options.add_argument("--headless")
 
-    options = ChromeOptions()
-    # options.add_argument("--headless")        
-    # options.add_argument(f'--proxy-server={proxy}')
-    # print(f"using proxy : {proxy}")
-
-    service = ChromeService()
-
-    driver = webdriver.Chrome(service=service , options= options)
+    # Set up ChromeDriver using webdriver-manager
+    service = Service(ChromeDriverManager().install())
+    driver = webdriver.Chrome(service=service, options=options)
     driver.set_page_load_timeout(TIMEOUT)
 
     return driver
+
 
 def wait_for_element(driver, by, selector, timeout=TIMEOUT):
     return WebDriverWait(driver, timeout).until(
