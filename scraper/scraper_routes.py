@@ -6,5 +6,5 @@ def create_app():
     app = Flask(__name__)
     app.route('/product/cv', methods=['POST', 'GET'])(check_validity)
 
-    app.route('/')(lambda: "Ok,I am healthy!")
+    app.route('/')(lambda: "Ok,I am healthyyy!")
     return app
