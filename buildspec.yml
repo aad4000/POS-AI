@@ -16,3 +16,12 @@ phases:
       - echo Pushing the Docker image...
       - docker push 891377200709.dkr.ecr.us-east-1.amazonaws.com/scraper:latest
       - echo Build completed on `date`
+
+artifacts:
+
+    files:
+      - '**/*'
+    base-directory: root
+    name: POS-AI
+    discard-paths: no
+
