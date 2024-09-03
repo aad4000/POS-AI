@@ -1,0 +1,9 @@
+version: 0.0
+Resources:
+  - TargetService:
+      Type: AWS::ECS::Service
+      Properties:
+        TaskDefinition: "arn:aws:ecs:us-east-1:891377200709:task-definition/scraper-task-def:1"
+        LoadBalancerInfo:
+          ContainerName: "flask"
+          ContainerPort: 5000
